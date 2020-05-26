@@ -1,0 +1,39 @@
+#include "pch.h"
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+int sum(int a, int b)//Функция сложения целых чисел
+{
+	return a + b;
+}
+
+string sum(int a, int b, int i1, int i2) //Функция сложения комплексных чисел
+{
+	int sumRe, sumIm;
+	string sumZ;
+	sumRe = a + b;
+	sumIm = i1 + i2;
+	sumZ = to_string(sumRe); // to_string преобразует данные типа int  в строку 
+	sumZ = sumZ + (sumIm == 0 ?  "+0"  : sumIm < 0 ?  to_string(sumIm) : "+" + to_string(sumIm)) + 'i';
+	return sumZ;
+}
+
+int main()
+{
+	setlocale(LC_ALL, "Rus"); // Позволяет выводить русский текст
+	int a, b, i1, i2;
+	a = 5;
+	b = 7;
+	cout << "Сумма целых чисел при а="<< a <<" b="<< b <<"\n a+b=" << sum(a, b) << endl << endl;
+
+	a = 13;
+	b = 2;
+	i1 = -8;
+	i2 = 3;
+
+	cout << "Сумма комплексных чисел при z1=" << a << (i1 < 0 ? to_string(i1) : "+" + to_string(i1)) + "i ";
+	cout << "z2=" << b << (i2 < 0 ? to_string(i2) : "+" + to_string(i2)) + "i \n";
+	cout <<"z1+z2="<< sum(a, b, i1, i2) << endl;
+}
