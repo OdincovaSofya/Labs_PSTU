@@ -1,0 +1,169 @@
+Лабораторная работа № 3
+"Перегрузка операций"
+Постановка задачи:
+1. Определить пользовательский класс.
+2. Определить в классе следующие конструкторы: без параметров, с параметрами, копирования.
+3. Определить в классе деструктор.
+4. Определить в классе компоненты-функции для просмотра и установки полей данных (селекторы и модификаторы)
+5. Перегрузить операцию присваивания
+6. Перегрузить операции ввода и вывода объектов
+7. Перегрузить операции указанные в варианте
+8. Написать демонстрационную программу.
+
+Создать класс Time для работы с временными интервалами. Интервал должен быть представлен в виде двух полей: минуты типа int и секунды типа int, 
+при выводе минуты отделяются от секунд двоеточием. 
+Реализовать:
+- сложение временных интервалов;
+- сравнение временных интервалов;
+
+Код программы: 
+#include <iostream>
+#include "Timer.h"
+#include <ctime>
+
+using namespace std;
+using namespace Classes;
+
+int main()
+{
+	Timer timer(10, 20);
+	timer.Show();
+	Timer timer2(11, 20);
+	timer2.Show();
+
+	Timer t = timer + timer2;
+	t.Show();
+
+	bool res = timer == timer2;
+	cout << res;
+
+	timer = timer2;
+	timer.Show();
+
+	cout << timer2;
+
+	cin >> timer;
+	timer.Show();
+}}	
+Timer.cpp
+#include "Timer.h"
+#include <string>
+#include <iostream>
+
+namespace Classes
+{
+	using namespace std;
+
+	Timer::Timer()
+	{
+		min = 0;
+		sec = 0;
+	}
+	Timer::Timer(int min, int sec)
+	{
+		this->min = min;
+		this->sec = sec;
+	}
+
+	Timer::Timer(const Timer&f)
+	{
+		min = f.min;
+		sec = f.sec;
+	}
+
+	Timer::~Timer()
+	{
+	}
+	void Timer::setMin(int min)
+	{
+		this->min = min;
+	}
+	void Timer::setSec(int sec)
+	{
+		this->sec = sec;
+	}
+	void Timer::Show()
+	{
+		printf("%d:%d\n", min, sec);
+	}
+	Timer Timer::operator+(const Timer &other)
+	{
+		int temp1 = min * 60 + sec;
+		int temp2 = other.min * 60 + other.sec;
+
+		Timer t((temp1 + temp2) / 60, (temp1 + temp2) & 60);
+
+		return t;
+	}
+	bool Timer::operator==(const Timer& other)
+	{
+		int temp1 = min * 60 + sec;
+		int temp2 = other.min * 60 + other.sec;
+
+		if (temp1 != temp2)
+			return false;
+
+		return true;
+	}
+	Timer& Timer::operator=(const Timer& other)
+	{
+		min = other.min;
+		sec = other.sec;
+
+		return *this;
+	}
+	ostream& operator<<(ostream& out, const Timer& timer)
+	{
+		out << "Time: " << timer.min << ":" << timer.sec;
+
+		return out;
+	}
+	istream& operator>>(istream& in, Timer& timer)
+	{
+		int min;
+		int sec;
+		cout << "\nMin: "; in >> min;
+		cout << "Sec: "; in >> sec;
+		cout << endl;
+
+		int res = min * 60 + sec;
+		timer.min = res / 60;
+		timer.sec = res & 60;
+
+		return in;
+	}
+}
+	Timer.h
+#pragma once
+
+#include <string>
+
+namespace Classes
+{
+	using namespace std;
+
+	class Timer
+	{
+	private:
+		int min;
+		int sec;
+	public:
+		Timer();
+		Timer(int min, int sec);
+		Timer(const Timer&f);
+		~Timer();
+
+		void setMin(int min);
+		void setSec(int sec);
+
+		void Show();
+
+		Timer operator+(const Timer &other);
+		bool operator==(const Timer &other);
+		Timer& operator=(const Timer& other);
+		friend ostream& operator<< (ostream&out, const Timer &timer);
+		friend istream& operator>> (istream& in, Timer& timer);
+	};
+}
+
+}
