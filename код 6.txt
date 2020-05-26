@@ -1,0 +1,275 @@
+Лабораторная работа № 6
+"АТД. Контейнеры."
+Постановка задачи:
+1. Определить класс-контейнер
+2. Реализовать конструкторы, деструктор, операции ввода-вывода, операцию присваивания
+3. Перегрузить операции, указанные в варианте
+4. Реализовать класс-итератор
+
+
+Класс-контейнер Вектор с элементами типа int;
+Реализовать операции:
+[] – доступ по индексу;
+() – определение размера вектора;
++ число = добавляет константу ко всем элементам вектора;
+++ - переход к следующему элементу (с помощью класса итератора)
+
+Код программы:
+#include <iostream>
+#include "Vector.h"
+
+using namespace std;
+
+int main()
+{
+	Vector vec(5, 10);
+	cout << vec;
+	Vector vec2(5);
+	vec + 5;
+	cout << vec;
+
+	cout << "\nDATA: " << vec[4] << endl;
+
+	cout << "\Size: " << vec() << endl;
+
+	Vector vec3(5);
+	cin >> vec3;
+	cout << vec3;
+
+	cout << "=====================\n";
+	Iterator it = vec3.first();
+	for (; it != vec3.last(); it++)
+	{
+		cout << *it << endl;
+	}
+	cout << "=====================\n";
+
+	cout << "=====================\n";
+	it = vec3.last();
+	for (it--; it != vec3.first(); it--)
+	{
+		cout << *it << endl;
+	}
+	cout << *it << endl;
+	cout << "=====================\n";
+}
+Vector.cpp
+#include "Vector.h"
+
+Vector::Vector()
+{
+	size = 0;
+	arr = 0;
+}
+
+Vector::Vector(int size, int value)
+{
+	this->size = size;
+	arr = new int[this->size];
+	for (int i = 0; i < this->size; i++)
+	{
+		arr[i] = value;
+	}
+
+	begin.elem = &arr[0];
+	end.elem = &arr[size];
+}
+
+Vector::Vector(int size)
+{
+	this->size = size;
+	arr = new int[size];
+	for (int i = 0; i < size; i++)
+		arr[i] = 0;
+
+	begin.elem = &arr[0];
+	end.elem = &arr[size];
+}
+
+Vector::Vector(const Vector& v)
+{
+	size = v.size;
+	arr = new int[size];
+	for (int i = 0; i < size; i++)
+	{
+		arr[i] = v.arr[i];
+	}
+
+	begin = v.begin;
+	end = v.end;
+}
+
+
+Vector::~Vector()
+{
+	if(arr != 0) delete[]arr;
+	arr = 0;
+}
+
+Iterator Vector::first()
+{
+	return begin;
+}
+
+Iterator Vector::last()
+{
+	return end;
+}
+
+Vector& Vector::operator+(const int num)
+{
+	if (size == 0) return *this;
+
+	for (int i = 0; i < size; ++i)
+	{
+		arr[i] += num;
+	}
+
+	return *this;
+}
+
+Vector& Vector::operator=(const Vector& v)
+{
+	if (this == &v) return *this;
+
+	size = v.size;
+	if (arr != 0) delete[]arr;
+	arr = new int[size];
+	for (int i = 0; i < size; i++)
+	{
+		arr[i] = v.arr[i];
+	}
+
+	begin = v.begin;
+	end = v.end;
+
+	return *this;
+}
+
+int& Vector::operator[](int index)
+{
+	if (index < size)
+		return arr[index];
+	else
+		cout << "Index out of bounds";
+}
+
+int Vector::operator()()
+{
+	return size;
+}
+
+ostream& operator<<(ostream& out, const Vector& v)
+{
+	if (v.size == 0)
+	{
+		cout << "Array is empty";
+		return out;
+	}
+
+	for (int i = 0; i < v.size; i++)
+	{
+		cout << v.arr[i] << endl;
+	}
+
+	return out;
+}
+
+istream& operator>>(istream& in, Vector& v)
+{
+	for (int i = 0; i < v.size; i++)
+	{
+		cout << "Elem " << i << ": "; in >> v.arr[i];
+	}
+
+	return in;
+}
+
+Iterator::Iterator()
+{
+	elem = 0;
+}
+
+Iterator::Iterator(const Iterator& it)
+{
+	elem = it.elem;
+}
+
+bool Iterator::operator==(const Iterator& it)
+{
+	return elem == it.elem;
+}
+
+bool Iterator::operator!=(const Iterator& it)
+{
+	return elem != it.elem;
+}
+
+Iterator& Iterator::operator++(int)
+{
+	++elem;
+
+	return *this;
+}
+
+Iterator& Iterator::operator--(int)
+{
+	--elem;
+
+	return *this;
+}
+
+int& Iterator::operator*() const
+{
+	return *elem;
+}
+	Vector.h
+#pragma once
+
+#include <iostream>
+
+using namespace std;
+
+class Iterator
+{
+	friend class Vector;
+
+public:
+	Iterator();
+	Iterator(const Iterator& it);
+
+	bool operator==(const Iterator& it);
+	bool operator !=(const Iterator& it);
+	Iterator& operator++(int);
+	Iterator& operator--(int);
+	int& operator*() const;
+
+private:
+	int* elem;
+};
+
+class Vector
+{
+public:
+	Vector();
+	Vector(int size, int value);
+	Vector(int size);
+	Vector(const Vector& v);
+	~Vector();
+
+	Iterator first();
+	Iterator last();
+
+	friend ostream& operator<< (ostream& out, const Vector& v);
+	friend istream& operator>>(istream& in, Vector& v);
+	Vector& operator+(const int num);
+	Vector& operator=(const Vector& v);
+	int& operator[](int index);
+	int operator()();
+private:
+	int size;
+	int* arr;
+
+	Iterator begin;
+	Iterator end;
+};
