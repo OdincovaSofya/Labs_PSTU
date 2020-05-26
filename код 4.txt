@@ -1,0 +1,302 @@
+Лабораторная работа № 4
+"Простое наследование. Принцип подстановки"
+Постановка задачи:
+1. Определить пользовательский класс.
+2. Определить в классе следующие конструкторы: без параметров, с параметрами, копирования.
+3. Определить в классе деструктор.
+4. Определить в классе компоненты-функции для просмотра и установки полей данных (селекторы и модификаторы)
+5. Перегрузить операцию присваивания
+6. Перегрузить операции ввода и вывода объектов
+7. Определить производный класс
+8. Реализовать функции, получающие и возвращающие объект базового класса
+
+ПАРА_ЧИСЕЛ (Pair)
+Первое число(first) – int
+Второе число(second) – int
+Определить методы изменения полей и сравнения пар.
+Создать производный класс Дробь, с полями целая часть числа и дробная часть числа. Определить полный набор методов сравнения.
+
+Код программы: 
+#include <iostream>
+#include "ValuePair.h"
+#include <ctime>
+#include "FloatPair.h"
+
+using namespace std;
+using namespace Classes;
+
+int main()
+{
+	ValuePair pair1(10, 15);
+	cout << pair1;
+
+	ValuePair pair2(99, 9999);
+	cout << pair2;
+
+	if (pair1 > pair2)
+	{
+		cout << "yes\n";
+	}
+
+	FloatPair pair3(50, 50, 99, 9999);
+
+	pair1 = pair3;
+	cout << pair1;
+
+	FloatPair pair4(78, 13, 34, 565);
+
+	if (pair3 > pair4)
+	{
+		cout << "yes";
+	}
+
+	if (pair3 == pair2)
+	{
+		cout << "yes";
+	}
+
+	if (pair3 > pair2)
+	{
+		cout << "yes";
+	}
+
+	if (pair3 == pair4)
+	{
+		cout << "yes";
+	}
+}
+ValuePair.cpp
+#include "ValuePair.h"
+
+
+namespace Classes
+{
+	ValuePair::ValuePair()
+	{
+		first = 0;
+		second = 0;
+	}
+
+	Classes::ValuePair::ValuePair(int first, int second)
+	{
+		this->first = first;
+		this->second = second;
+	}
+
+	ValuePair::~ValuePair()
+	{
+	}
+
+	void Classes::ValuePair::setFirst(int num)
+	{
+		first = num;
+	}
+
+	void Classes::ValuePair::setSecond(int num)
+	{
+		second = num;
+	}
+
+	int ValuePair::getFirst()
+	{
+		return first;
+	}
+
+	int ValuePair::getSecond()
+	{
+		return second;
+	}
+
+	ValuePair Classes::ValuePair::operator+(const ValuePair& other)
+	{
+		ValuePair p(first + other.first, second + other.second);
+
+		return p;
+	}
+
+	bool Classes::ValuePair::operator==(const ValuePair& other)
+	{
+		if (first == other.first && second == other.second)
+			return true;
+
+		return false;
+	}
+
+	ValuePair& Classes::ValuePair::operator=(const ValuePair& other)
+	{
+		first = other.first;
+		second = other.second;
+
+		return *this;
+	}
+
+	bool ValuePair::operator>(const ValuePair& other)
+	{
+		if (first > other.first)
+			return true;
+
+		if (first == other.first && second > other.second)
+			return true;
+
+		return false;
+	}
+
+	ostream& Classes::operator<<(ostream& out, const ValuePair& pair)
+	{
+		out << "First: " << pair.first << "\nSecond: " << pair.second << endl;
+
+		return out;
+	}
+
+	istream& Classes::operator>>(istream& in, ValuePair& pair)
+	{
+		cout << "First: "; in >> pair.first;
+		cout << "Second: "; in >> pair.second;
+
+		return in;
+	}
+}
+	ValuePair.h
+#pragma once
+
+#include <iostream>
+
+namespace Classes
+{
+	using namespace std;
+
+	class ValuePair
+	{
+	protected:
+		int first;
+		int second;
+	public:
+		ValuePair();
+		ValuePair(int first, int second);
+		~ValuePair();
+
+		void setFirst(int num);
+		void setSecond(int num);
+		int getFirst();
+		int getSecond();
+
+		ValuePair operator+(const ValuePair& other);
+		bool operator==(const ValuePair& other);
+		ValuePair& operator=(const ValuePair& other);
+		bool operator>(const ValuePair& other);
+
+		friend ostream& operator<< (ostream& out, const ValuePair& pair);
+		friend istream& operator>> (istream& in, ValuePair& pair);
+	};
+}
+
+	
+FloatPair.cpp
+#include "FloatPair.h"
+
+namespace Classes
+{
+	FloatPair::FloatPair() : ValuePair()
+	{
+		integerPart = 0;
+		floatPart = 0;
+	}
+
+	Classes::FloatPair::FloatPair(int integerPart, int floatPart) : ValuePair()
+	{
+		this->integerPart = integerPart;
+		this->floatPart = floatPart;
+	}
+
+	FloatPair::FloatPair(int integerPart, int floatPart, int first, int second) : ValuePair(first, second)
+	{
+		this->integerPart = integerPart;
+		this->floatPart = floatPart;
+	}
+
+	FloatPair::~FloatPair()
+	{
+	}
+
+	bool FloatPair::operator> (ValuePair& other)
+	{
+		if (first > other.getFirst())
+			return true;
+
+		if (first == other.getFirst() && second > other.getSecond())
+			return true;
+
+		return false;
+	}
+
+	bool FloatPair::operator> (const FloatPair& other)
+	{
+		if (integerPart > other.integerPart)
+			return true;
+
+		if (integerPart == other.integerPart && floatPart > other.floatPart)
+			return true;
+
+		return false;
+	}
+
+	bool FloatPair::operator== (ValuePair& other)
+	{
+		if (first == other.getFirst() && second == other.getSecond())
+			return true;
+
+		return false;
+	}
+
+	bool FloatPair::operator== (const FloatPair& other)
+	{
+		if (first == other.first && second == other.second && integerPart == other.integerPart && floatPart == other.floatPart)
+			return true;
+
+		return false;
+	}
+
+	ostream& operator<<(ostream& out, const FloatPair& pair)
+	{
+		out << "First: " << pair.first << "\nSecond: " << pair.second << "\nIntegerPart: " << pair.integerPart << "\nFloatPart: " << pair.floatPart << endl;
+
+		return out;
+	}
+	istream& operator>>(istream& in, FloatPair& pair)
+	{
+		cout << "First: "; in >> pair.first;
+		cout << "\nSecond: "; in >> pair.second;
+		cout << "\nIntegerPart: "; in >> pair.integerPart;
+		cout << "\nFloatPart: "; in >> pair.second;
+
+		return in;
+	}
+}
+
+FloatPair.h
+#pragma once
+#include "ValuePair.h"
+
+namespace Classes
+{
+	class FloatPair :
+		public ValuePair
+	{
+	private:
+		int integerPart;
+		int floatPart;
+	public:
+		FloatPair();
+		FloatPair(int integerPart, int floatPart);
+		FloatPair(int integerPart, int floatPart, int first, int second);
+		~FloatPair();
+
+	    bool operator>(ValuePair &other);
+		bool operator>(const FloatPair &other);
+		bool operator==(ValuePair& other);
+		bool operator==(const FloatPair& other);
+
+		friend ostream& operator<< (ostream& out, const FloatPair& pair);
+		friend istream& operator>> (istream& in, FloatPair& pair);
+	};
+}
