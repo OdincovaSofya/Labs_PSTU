@@ -1,0 +1,136 @@
+Лабораторная работа № 1
+"Классы и объекты. Инкапсуляция."
+Постановка задачи:
+1. Реализовать определение нового класса. Для демонстрации работы с объектами написать главную функцию. Продемонстрировать разные способы создания 
+объектов и массивов объектов.
+2. Структура-пара – структура с двумя полями, которые обычно имеют имена first и second. Требуется реализовать тип данных с помощью такой структуры.
+3. Реализовать внешнюю функцию make_тип()
+4. Поле first – положительное целое число, числитель, поле second – положительное число, знаменатель. Реализовать метод ipart() – 
+выделение целой части дроби first/second, метод должен проверять неравенство знаменателя нулю.
+
+Код программы: 
+#include <iostream>
+#include "Faction.h"
+#include <ctime>
+
+using namespace std;
+using namespace Classes;
+
+Faction *faction;
+Faction* Make(int a, int b);
+void FreeMemory(Faction*& f);
+
+Faction* factions;
+
+int main()
+{
+	cout << "Create faction";
+	int a, b;
+	cout << "First..."; cin >> a;
+	cout << "Second..."; cin >> b;
+
+	faction = Make(a, b);
+	faction->Show();
+	int result = faction->IPart();
+	cout << result;
+
+	FreeMemory(faction);
+
+	cout << "\nRandom now\n";
+	srand(time(NULL));
+	int count = rand() % 15;
+	factions = new Faction[count];
+	for (int i = 0; i < count; i++)
+	{
+		factions[i].setFirst(rand() % 100);
+		factions[i].setSecond(rand() % 150);
+		factions[i].Show();
+		cout << factions[i].IPart() << endl;
+	}
+
+	delete[] factions;
+	
+}
+
+void FreeMemory(Faction*& f)
+{
+	delete f;
+	f = NULL;
+}
+
+Faction* Make(int a, int b)
+{
+	Faction *faction = new Faction(a, b);
+
+	return faction;
+}
+	Faction.cpp
+#include "Faction.h"
+#include <iostream>
+
+namespace Classes
+{
+	Faction::Faction()
+	{
+	}
+	Faction::Faction(int first, int second)
+	{
+		this->first = first;
+		this->second = second;
+	}
+
+	Faction::~Faction()
+	{
+	}
+
+	void Faction::setFirst(int first)
+	{
+		this->first = first;
+	}
+
+	void Faction::setSecond(int second)
+	{
+		this->second = second;
+	}
+
+	void Faction::Show()
+	{
+		std::printf("First: %d \nSecond: %d \n", first, second);
+	}
+
+	int Faction::IPart()
+	{
+		if (second == 0)
+		{
+			printf("Denominator is 0\n");
+			return -1;
+		}
+
+		int result = first / second;
+
+		return result;
+	}
+}
+
+	Faction.h
+#pragma once
+
+namespace Classes
+{
+	class Faction
+	{
+	private:
+		unsigned int first;
+		unsigned int second;
+	public:
+		Faction();
+		Faction(int first, int second);
+		~Faction();
+
+		void setFirst(int first);
+		void setSecond(int second);
+		void Show();
+		int IPart();
+
+	};
+}
