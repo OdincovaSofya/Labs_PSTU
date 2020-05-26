@@ -1,0 +1,135 @@
+Лабораторная работа № 2
+"Классы и объекты. Использование конструкторов."
+Постановка задачи:
+1. Определить пользовательский класс.
+2. Определить в классе следующие конструкторы: без параметров, с параметрами, копирования.
+3. Определить в классе деструктор.
+4. Определить в классе компоненты-функции для просмотра и установки полей данных (селекторы и модификаторы)
+5. Написать демонстрационную программу.
+
+Пользовательский класс СТУДЕНТ
+	ФИО – string;
+	Группа – string;
+	Средний балл – float;
+	
+Код программы:
+ 
+#include <iostream>
+#include "Student.h"
+#include <ctime>
+
+using namespace std;
+using namespace Classes;
+
+Student Make();
+
+int main()
+{
+	Student f1;
+	f1.Show();
+
+	Student f2("Иванов Иван Иванович", "АСУ18-1БЗУ", 4.5);
+	f2.Show();
+
+	Student f3 = f2;
+	f3.Show();
+	
+	f1 = Make();
+	f1.Show();
+}
+
+Student Make()
+{
+	cout << "FullName" << endl;
+	string fullName;
+	getline(cin, fullName);
+
+	cout << "Group" << endl;
+	string group;
+	cin >> group;
+
+	cout << "Point" << endl;
+	float point;
+	cin >> point;
+
+	return Student(fullName, group, point);
+}	Student.cpp
+#include "Student.h"
+#include <string>
+#include <iostream>
+
+namespace Classes
+{
+	using namespace std;
+
+	Student::Student()
+	{
+		fullName = "Not found";
+		group = "Not found";
+		averagePoint = 0;
+	}
+	Student::Student(string fullName, string group, float point)
+	{
+		this->fullName = fullName;
+		this->group = group;
+		averagePoint = point;
+	}
+
+	Student::Student(const Student&f)
+	{
+		fullName = f.fullName;
+		group = f.group;
+		averagePoint = f.averagePoint;
+	}
+
+	Student::~Student()
+	{
+	}
+	void Student::setFullName(string name)
+	{
+		fullName = name;
+	}
+	void Student::setGroup(string group)
+	{
+		this->group = group;
+	}
+	void Student::setPoint(float point)
+	{
+		averagePoint = point;
+	}
+	void Student::Show() 
+	{
+		cout << "FullName: " << fullName << endl;
+		cout << "Group: " << group << endl;
+		cout << "Point: " << averagePoint << endl;
+	}
+}
+
+	Student.h
+#pragma once
+
+#include <string>
+
+namespace Classes
+{
+	using namespace std;
+
+	class Student
+	{
+	private:
+		string fullName;
+		string group;
+		float averagePoint;
+	public:
+		Student();
+		Student(string fullName, string group, float point);
+		Student(const Student&f);
+		~Student();
+
+		void setFullName(string name);
+		void setGroup(string group);
+		void setPoint(float point);
+
+		void Show();
+	};
+}
