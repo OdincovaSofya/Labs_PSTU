@@ -1,0 +1,654 @@
+Лабораторная работа № 8
+"Программа, управляемая событиями”
+Задание: 
+1. Определить иерархию пользовательских классов. Во главе иерархии должен стоять абстрактный класс с чисто виртуальными методами для ввода и вывода информации об атрибутах объектов.
+2. Реализовать конструкторы, деструктор, операцию присваивания, селекторы и модификаторы.
+3. Определить класс-группу на основе структуры, указанной в варианте.
+4. Для группы реализовать конструкторы, деструктор, методы для добавления и удаления элементов в группу, метод для просмотра группы, перегрузить операцию для получения информации о размере группы.
+5. Определить класс диалог – наследника группы, в котором реализовать методы для обработки событий.
+6. Добавить методы для обработки событий группой и объектами пользовательских классов.
+7. Написать тестирующую программу.
+8. Нарисовать диаграмму классов и диаграмму объектов.
+
+Базовый класс:
+Человек (Person)
+Имя – string
+Возраст – int
+Производный класс:
+Студент (Student)
+Рейтинг – float
+Группа – Вектор (Vector)
+
+Команды:
+- Создать группу (формат команды: m количество элементов группы)
+- Добавить элемент в группу (формат команды: +)
+- Удалить элемент из группы (формат команды: -)
+- Вывести информацию об элементах группы (формат команды: s)
+- Вывести информацию об элементе группы (формат команды :? Номер объекта в группе)
+- Конец работы (формат команды: q)
+
+
+// ConsoleApplication1.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
+//
+#include <iostream>
+#include "Person.h"
+#include "Event.h"
+#include "Student.h"
+#include "Vector.h"
+#include <string>
+#include "EventDispatcher.h"
+
+using namespace std;
+
+thread dispatcherThread;
+EventDispatcher *dispather;
+
+int main()
+{
+	dispather = new EventDispatcher();
+
+	Student student1("Andrey", 21, 3.5f);
+
+	//p = &student1 - первым параметров в функцию нявно передается указатель на объект, поэтому в лямбде указываем у кого вызвать
+	dispather->TryAddListener(EventType::CreateGroup, student1, [p=&student1](auto& ev, auto str) { p->HandleEvent(ev, str); });
+	dispather->TryAddListener(EventType::Add, student1, [p = &student1](auto& ev, auto str) { p->TestLULW(ev, str); });
+	dispather->TryAddListener(EventType::Delete, student1, [p = &student1](auto& ev, auto str) { p->HandleEvent(ev, str); });
+	dispather->TryAddListener(EventType::ShowAllInfo, student1, [p = &student1](auto& ev, auto str) { p->HandleEvent(ev, str); });
+	dispather->TryAddListener(EventType::ShowElementInfo, student1, [p = &student1](auto& ev, auto str) { p->HandleEvent(ev, str); });
+
+	Student student2("Vanya", 99, 5);
+	dispather->TryAddListener(EventType::Add, student2, [p = &student2](auto& ev, auto str) { p->HandleEvent(ev, str); });
+
+	string command;
+	while (true) {
+		cout << "\nCommands:" <<
+			"\n1. m : create group (example: m 5)" <<
+			"\n2. + : add element to group (example: + name)" <<
+			"\n3. - : remove element from group (example: - 2)" <<
+			"\n4. s : display information about group elements" <<
+			"\n5. : : display information about group element (example: :2)" <<
+			"\n6. q : quit";
+
+		cout << "\nCommand --> \n";
+		getline(cin, command);
+
+		if (command == "q") {
+			break;
+		}
+
+		char cmd = command[0];
+		string arguments;
+		if(command.size() > 1)
+			arguments = command.substr(1);
+
+		dispather->ExecuteEvent((EventType)cmd, arguments);
+	}
+
+	delete dispather;
+
+	cout << "End;";
+ }	
+Event.h
+#pragma once
+#include <cstdint>
+#include <string>
+#include "EventType.h"
+#include "Person.h"
+#include <functional>
+
+class Event;
+class Person;
+
+using namespace std;
+
+class Event
+{
+public:
+	using ptr_to_function = function<void(Event &, string)>; //тип делегата для хранения функции, юсинг чтобы по кд не писать длинный текст
+
+	Event(EventType eventType, Person* object, ptr_to_function invokeMethod)
+	{
+		this->eventType = eventType;
+		this->object = object;
+		this->invokeMethod = invokeMethod;
+	}
+
+	Person* GetObject() const {
+		return object;
+	}
+
+	EventType GetEventType() const {
+		return eventType;
+	}
+
+	void Invoke(string arguments)
+	{
+		invokeMethod(*this, arguments);
+	}
+
+private:
+	EventType eventType;
+	Person *object;
+	ptr_to_function invokeMethod; //функция типа делегата
+};
+EventDispatcher
+#pragma once
+#include "Event.h"
+#include "Vector.h"
+#include "Person.h"
+#include "EventType.h"
+
+#include <unordered_map>
+#include <mutex>
+#include <string>
+#include <thread>
+
+using namespace std;
+
+class EventDispatcher
+{
+private:
+	unordered_map<EventType, Vector<Event>> listeners; //Dictionary, где ключ - тип события, а вектор подписанты
+
+public:
+	EventDispatcher()
+	{
+
+	}
+
+	bool TryAddListener(EventType eventType, Person &object, Event::ptr_to_function toInvoke)
+	{
+		auto it = listeners.find(eventType);
+		if (it == listeners.end())  //если нет такой пары еще, то вернется конец итератора, поэтому создаем такую пару
+		{
+			it = listeners.emplace(eventType, Vector<Event>()).first;
+		}
+
+		Vector<Event>& events = it->second;
+
+		Event newListener(eventType, &object, toInvoke);
+
+		events.PushBack(newListener);
+
+		return true;
+	}
+
+	bool TryRemoveListener(Person& object)
+	{
+		bool result = false;
+		for (auto it = listeners.begin(); it != listeners.end(); ++it)
+		{
+			Vector<Event> &objects = it->second;
+			for (int i = 0; i < objects.GetLength(); i++)
+			{
+				Person *person = objects[i].GetObject();
+				if (person == &object)
+				{
+					objects.RemoveAt(i);
+
+					result = true;
+					break;
+				}
+			}
+		}
+
+		return result;
+	}
+
+	void ExecuteEvent(char eventType)
+	{
+		ExecuteEvent(eventType);
+	}
+
+	void ExecuteEvent(EventType eventType, string arguments)
+	{
+		auto it = listeners.find(eventType);
+		if (it != listeners.end()) {
+			Vector<Event>& events = it->second;
+
+			for (int i = 0; i < events.GetLength(); i++)
+			{
+				Event currentEvent = events[i];
+
+				currentEvent.Invoke(arguments);
+			}
+		}
+	}
+
+};
+
+EventType.h
+#pragma once
+
+enum class EventType : char
+{
+	CreateGroup = 'm',
+	Add = '+',
+	Delete = '-',
+	ShowAllInfo = 's',
+	ShowElementInfo = ':'
+};
+Person.h
+#pragma once
+#include <iostream>
+#include "Event.h"
+#include <string>
+
+using namespace std;
+
+class Event;
+class Person;
+
+class Person
+{
+private:
+	string name;
+	int age;
+
+public:
+	Person()
+	{
+		name = "";
+		age = 0;
+	}
+
+	Person(string name, int age)
+	{
+		this->name = name;
+		this->age = age;
+	}
+	~Person()
+	{
+
+	}
+
+	string GetName()
+	{
+		return name;
+	}
+
+	int GetAge()
+	{
+		return age;
+	}
+
+	void SetName(string name)
+	{
+		this->name = name;
+	}
+
+	void SetAge(int age)
+	{
+		this->age = age;
+	}
+
+	bool operator == (const Person& second) {
+		return this->name == second.name && this->age == second.age;
+	}
+
+	virtual void HandleEvent(const Event& currentEvent, string args) {
+
+	}
+
+	virtual void TestCmd(const Event& currentEvent, string args) {
+	}
+
+	virtual void Show() {
+
+	}
+	virtual void Input() {
+
+	}
+
+};
+Student.h
+#pragma once
+#include "Person.h"
+#include "Vector.h"
+#include "Event.h"
+#include <string>
+
+class Student :
+	public Person
+{
+private:
+	float rating;
+	Vector<Student> groups;
+
+public:
+	Student(string name, int age) : Person(name, age)
+	{
+		rating = 0;
+		groups = Vector<Student>(1);
+	}
+
+	Student(string name, int age, float rating) : Person(name, age)
+	{
+		this->rating = rating;
+		groups = Vector<Student>(1);
+	}
+
+	void HandleEvent(const Event& currentEvent, string args) 
+	{
+		try 
+		{
+			switch (currentEvent.GetEventType())
+			{
+			case EventType::CreateGroup: {
+				int elementsCount = atoi(args.c_str());
+
+				CreateGroup(elementsCount);
+
+				break;
+			}
+			case EventType::Add: {
+
+				Student newStudent = Student("", 0, 0);
+				newStudent.Input();
+
+				groups.PushBack(newStudent);
+
+				break;
+			}
+			case EventType::Delete: {
+				int elementID = atoi(args.c_str());
+
+				groups.RemoveAt(elementID);
+
+				break;
+			}
+			case EventType::ShowAllInfo: {
+
+				Show();
+
+				break;
+			}
+			case EventType::ShowElementInfo: {
+				int elementID = atoi(args.c_str());
+
+				cout << "Info about " << args << ": -->"; 
+				groups[elementID].Show();
+
+				break;
+			}
+			default: {
+				cout << "Cannot find event";
+			}
+			}
+		}
+		catch(runtime_error error)
+		{
+			cout << error.what();
+		}
+	}
+
+	void TestCmd(const Event& currentEvent, string args) {
+		cout << "Test CMD\n";
+	}
+
+	void Show() 
+	{
+		cout << "Student: " <<
+			"\nName: " << GetName() <<
+			"\nAge: " << GetAge() <<
+			"\nRating: " << rating <<
+			"\nGroups: \n" << groups;
+	}
+
+	void Input()
+	{
+		string name; 
+		int age;
+		int groupSize;
+
+		cout << "Student: " <<
+			"\nName: -->"; getline(cin, name);
+		cout << "\nAge: -->"; cin >> age;
+		SetName(name);
+		SetAge(age);
+
+		cout << "\nRating: -->"; cin >> rating;
+	}
+
+	void CreateGroup(int groupSize)
+	{
+		groups.Clear();
+
+		for (int i = 0; i < groupSize; i++)
+		{
+			Student newStudent = Student("", 0, 0);
+			cin >> newStudent;
+
+			groups.PushBack(newStudent);
+		}
+	}
+
+	friend ostream& operator<< (ostream& out, Student& v);
+	friend istream& operator>> (istream& in, Student& v);
+
+	float GetRating()
+	{
+		return rating;
+	}
+
+	Vector<Student> GetGroups()
+	{
+		return groups;
+	}
+
+	void TestLULW(const Event& currentEvent, string args)
+	{
+		cout << "TETSLULW";
+	}
+};
+
+ostream& operator<<(ostream& out, Student& v)
+{
+	v.Show();
+
+	return out;
+}
+
+istream& operator>>(istream& in, Student& v)
+{
+	v.Input();
+
+	return in;
+}
+
+Vector.h
+#pragma once
+
+#include <iostream>
+#include <algorithm>
+
+using namespace std;
+
+template<class T>
+class Vector
+{
+public:
+	const int defaultCapacity = 4;
+
+	Vector() 
+	{
+
+	}
+
+	Vector(int size, T value)
+	{
+		EnsureCapacity(size);
+
+		for (int i = 0; i < size; i++)
+		{
+			PushBack(value);
+		}
+	}
+
+	Vector(const Vector<T>& v)
+	{
+		size = v.size;
+		
+		EnsureCapacity(size);
+
+		for (int i = 0; i < size; i++)
+		{
+			PushBack(v[i]);
+		}
+	}
+
+	Vector(int capacity)
+	{
+		EnsureCapacity(size);
+	}
+
+	~Vector()
+	{
+		Clear();
+
+		if(arr != NULL)
+		free(arr);
+	}
+
+	Vector& operator+(const T value)
+	{
+		if (size == 0) return *this;
+
+		for (int i = 0; i < size; ++i)
+		{
+			arr[i] += value;
+		}
+
+		return *this;
+	}
+
+	Vector& operator=(const Vector& v)
+	{
+		if (this == &v) return *this;
+
+		Clear();
+
+		EnsureCapacity(v.size);
+
+		for (int i = 0; i < size; i++)
+		{
+			PushBack(v.arr[i]);
+		}
+
+		return *this;
+	}
+
+	bool PushBack(T value)
+	{
+		if (size == capacity)
+		{
+			EnsureCapacity(max(size * 2, size+1));
+		}
+
+		new (&arr[size++]) T(value);
+
+		return true;
+	}
+
+	void RemoveAt(int position)
+	{
+		if (position >= size)
+			return;
+
+		for (int i = position; i < size-1; i++)
+		{
+			arr[i].~T();
+			new(&arr[i]) T(move(arr[i + 1]));
+		}
+
+		size--;
+		arr[size].~T();
+	}
+
+	int GetLength()
+	{
+		return size;
+	}
+
+	void Clear() {
+		if (size == 0)
+			return;
+
+		cout << capacity;
+
+		for (int i = 0; i < size; i++)
+		{
+			arr[i].~T();
+		}
+
+		size = 0;
+	}
+
+	T& operator[](int index) const
+	{
+		if (index < size)
+			return arr[index];
+		else
+			throw runtime_error("Index out of bounds");
+	}
+
+	int operator()()
+	{
+		return size;
+	}
+
+	template<class T> friend ostream& operator<< (ostream& out, const Vector<T>& v);
+	template<class T> friend istream& operator>> (istream& in, Vector<T>& v);
+
+private:
+	int size = 0;
+	int capacity = 0;
+	T* arr = nullptr;
+
+	void EnsureCapacity(int newCapacity) {
+		if (newCapacity <= capacity)
+			return;
+
+		T* newArr = static_cast<T*>(malloc(sizeof(T) * newCapacity)); //просто выделяем память, без вызовов конструкторов
+
+		for (int i = 0; i < size; i++)
+		{
+			new(&newArr[i]) T(move(arr[i])); //вызываеем конструктор для нового объекта и перемещаем на него старый
+		}
+
+		if (arr != NULL)
+			free(arr);
+
+		arr = newArr;
+
+		capacity = newCapacity;
+	}
+};
+
+template<class T>
+ostream& operator<<(ostream& out, const Vector<T>& v)
+{
+	if (v.size == 0)
+	{
+		cout << "Array is empty";
+		return out;
+	}
+
+	for (int i = 0; i < v.size; i++)
+	{
+		cout << v.arr[i] << endl;
+	}
+
+	return out;
+}
+
+template<class T>
+istream& operator>>(istream& in, Vector<T>& v)
+{
+	for (int i = 0; i < v.size; i++)
+	{
+		cout << "Elem " << i << ": "; in >> v.arr[i];
+	}
+
+	return in;
+}

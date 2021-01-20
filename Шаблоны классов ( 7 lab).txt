@@ -1,0 +1,267 @@
+Лабораторная работа № 7
+"Шаблоны классов”
+Задание:
+1. Определить шаблон класса-контейнера;
+2. Реализовать конструкторы, деструктор, операции ввода-вывода, операцию присваивания;
+3. Перегрузить операции, указанные в варианте;
+4. Инстанцировать шаблон для стандартных типов данных (int, float, double);
+5. Написать тестирующую программу, иллюстрирующую выполнение операция для контейнера, содержащего элементы стандартных типов данных;
+6. Реализовать пользовательский класс (см. лабораторную работу номер 3)
+7. Перегрузить для пользовательского класса операции ввода-вывода;
+8. Перегрузить операции необходимые для выполнения операций контейнерного класса;
+9. Инстанцировать шаблон для пользовательского класса;
+10. Написать тестирующую программу, иллюстрирующую выполнение операций контейнера, содержащего элементы пользовательского класса;
+
+
+Класс-контейнер Вектор с элементами типа int;
+Реализовать операции:
+[] – доступ по индексу;
+() – определение размера вектора;
++ число = добавляет константу ко всем элементам вектора;
+
+
+#include <iostream>
+#include "Vector.h"
+#include "Time.h"
+
+using namespace std;
+
+int main()
+{
+	Vector<int> intVector(5, 5);
+	Vector<float> floatVector(5, 5.77777);
+	Vector<double> doubleVector(5, 5.23);
+
+	cout << "int: " << intVector;
+	cout << "float: " << floatVector;
+	cout << "double: " << doubleVector;
+
+	int vectorSize = 5;
+	Vector<Time> timeVector(vectorSize);
+	for (int i = 0; i < vectorSize; i++)
+	{
+		Time time(i, i * 2);
+
+		timeVector[i] = time;
+	}
+
+	cout << "Time vector:" << timeVector;
+}
+	Vector.h
+#pragma once
+
+#include <iostream>
+
+using namespace std;
+
+template<class T>
+class Vector
+{
+public:
+	Vector(int size, T value)
+	{
+		this->size = size;
+		arr = new T[this->size];
+		for (int i = 0; i < this->size; i++)
+		{
+			arr[i] = value;
+		}
+	}
+
+	Vector(const Vector<T>& v)
+	{
+		size = v.size;
+		arr = new T[size];
+		for (int i = 0; i < size; i++)
+		{
+			arr[i] = v.arr[i];
+		}
+	}
+
+	Vector(int size)
+	{
+		this->size = size;
+		arr = new T[this->size];
+	}
+
+
+	~Vector()
+	{
+		if (arr != 0) delete[]arr;
+		arr = 0;
+	}
+
+	Vector& operator+(const T value)
+	{
+		if (size == 0) return *this;
+
+		for (int i = 0; i < size; ++i)
+		{
+			arr[i] += value;
+		}
+
+		return *this;
+	}
+
+	Vector& operator=(const Vector& v)
+	{
+		if (this == &v) return *this;
+
+		size = v.size;
+		if (arr != 0) delete[]arr;
+		arr = new int[size];
+		for (int i = 0; i < size; i++)
+		{
+			arr[i] = v.arr[i];
+		}
+
+		return *this;
+	}
+
+	T& operator[](int index)
+	{
+		if (index < size)
+			return arr[index];
+		else
+			throw runtime_error("Index out of bounds");
+	}
+
+	int operator()()
+	{
+		return size;
+	}
+
+	template<class T> friend ostream& operator<< (ostream& out, const Vector<T>& v);
+	template<class T> friend istream& operator>> (istream& in, Vector<T>& v);
+
+private:
+	int size;
+	T* arr;
+};
+
+template<class T>
+ostream& operator<<(ostream& out, const Vector<T>& v)
+{
+	if (v.size == 0)
+	{
+		cout << "Array is empty";
+		return out;
+	}
+
+	for (int i = 0; i < v.size; i++)
+	{
+		cout << v.arr[i] << endl;
+	}
+
+	return out;
+}
+
+template<class T>
+istream& operator>>(istream& in, Vector<T>& v)
+{
+	for (int i = 0; i < v.size; i++)
+	{
+		cout << "Elem " << i << ": "; in >> v.arr[i];
+	}
+
+	return in;
+}
+
+	Time.h
+#pragma once
+
+#include <iostream>
+#include <string>
+
+	using namespace std;
+
+	class Time
+	{
+	private:
+		int min;
+		int sec;
+	public:
+		Time()
+		{
+			min = 0;
+			sec = 0;
+		}
+		Time(int min, int sec)
+		{
+			this->min = min;
+			this->sec = sec;
+		}
+
+		Time(const Time& f)
+		{
+			min = f.min;
+			sec = f.sec;
+		}
+
+		~Time()
+		{
+		}
+		void setMin(int min)
+		{
+			this->min = min;
+		}
+		void setSec(int sec)
+		{
+			this->sec = sec;
+		}
+		void TShow()
+		{
+			printf("%d:%d\n", min, sec);
+		}
+		Time operator+(const Time& other)
+		{
+			int temp1 = min * 60 + sec;
+			int temp2 = other.min * 60 + other.sec;
+
+			Time t((temp1 + temp2) / 60, (temp1 + temp2) & 60);
+
+			return t;
+		}
+		bool operator==(const Time& other)
+		{
+			int temp1 = min * 60 + sec;
+			int temp2 = other.min * 60 + other.sec;
+
+			if (temp1 != temp2)
+				return false;
+
+			return true;
+		}
+		Time& operator=(const Time& other)
+		{
+			min = other.min;
+			sec = other.sec;
+
+			return *this;
+		}
+
+		friend ostream& operator<< (ostream& out, const Time& timer);
+		friend istream& operator>> (istream& in, Time& timer);
+	};
+
+	ostream& operator<<(ostream& out, const Time& timer)
+	{
+		out << "Time: " << timer.min << ":" << timer.sec;
+
+		return out;
+	}
+	istream& operator>>(istream& in, Time& timer)
+	{
+		int min;
+		int sec;
+		cout << "\nMin: "; in >> min;
+		cout << "Sec: "; in >> sec;
+		cout << endl;
+
+		int res = min * 60 + sec;
+		timer.min = res / 60;
+		timer.sec = res & 60;
+
+		return in;
+	}
+	

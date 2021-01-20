@@ -1,0 +1,397 @@
+Лабораторная работа № 10
+"Сохранение данных в файле с использованием потоков”
+Задание:
+1. Создать пользовательский класс с минимальной функциональностью.
+2. Написать функцию для создания объектов пользовательского класса (ввод исходной информации с клавиатуры) и сохранение их в потоке (файле).
+3. Написать функцию для чтения и просмотра объектов из потока.
+4. Написать функцию для удаления объектов из потока в соответствии с заданием варианта. Для выполнения задания выполнить перегрузку необходимых операций.
+5. Написать функцию для добавления объектов в поток в соответствии с заданием варианта. Для выполнения задания выполнить перегрузку необходимых операций.
+6. Написать функцию для изменения объектов в потоке в соответствии с заданием варианта. Для выполнения задания выполнить перегрузку необходимых операций.
+7. Для вызова функций в основной программе предусмотреть меню.
+
+
+Создать класс Time для работы с временными интервалами. Интервал должен быть представлен в виде двух полей: минуты типа int и секунды типа int. 
+При выводе минуты отделяются от секунд двоеточием. 
+Реализовать:
+- сложение временных интервалов (учесть, что в минуте не может быть более 60 секунд)
+- сравнение временных интервалов
+
+* Удалить все записи равные заданному значение.
+* Увеличить все записи с заданным значением на 1 минуту и 30 секунд
+* Добавить K записей после элемента с заданным номером
+
+#include <iostream>
+#include "FileManager.h"
+#include "Timer.h"
+#include <vector>
+#include <string>
+#include <limits>
+
+using namespace std;
+vector<Timer> timers;
+
+Timer CreateTimer();
+int DeleteEntries(int min, int sec, string fromFile);
+int AddValueTo(int min, int sec, string inFile);
+void InsertTimerAfter(int elementsCount, int elementId, string fromFile);
+
+int main()
+{
+
+	string command;
+	while (true) {
+		cout << endl;
+
+		cout << "1. Create new timer" << endl;
+		cout << "2. Save created timers (example 2 <fileName>)" << endl;
+		cout << "3. Read timers from <filePath>" << endl;
+		cout << "4. Delete all timer where <min> and <sec> from <filePath> (4 <filePath>)" << endl;
+		cout << "5. Add 1min and 30sec to all objects where <min> and <sec> from <filePath> (4 <filePath>)" << endl;
+		cout << "6. Add <count> timers after <element ID> in <fileName> (6 <fileName>)" << endl;
+		cout << "7. Print current vector" << endl;
+
+		cout << "\nCommand --> \n";
+		getline(cin, command);
+
+		if (command == "q") {
+			break;
+		}
+
+		int cmd = atoi(&command[0]);
+		string arguments;
+		if (command.size() > 1)
+			arguments = command.substr(1);
+
+		try {
+			switch (cmd)
+			{
+			case 1:
+			{
+				timers.push_back(CreateTimer());
+				break;
+			}
+			case 2: {
+				FileManager::Save<Timer>(timers, arguments);
+				break;
+			}
+			case 3: {
+				timers = FileManager::Read<Timer>(arguments);
+				break;
+			}
+			case 4: {
+				int min = 0;
+				int sec = 0;
+
+				cout << "\nMin: "; cin >> min;
+				cout << "\nSec: "; cin >> sec;
+
+				cout << "\nDELETED: " << DeleteEntries(min, sec, arguments);
+
+				break;
+			}
+			case 5: {
+				int min = 0;
+				int sec = 0;
+
+				cout << "\nMin: "; cin >> min;
+				cout << "\nSec: "; cin >> sec;
+
+				cout << "\nCHANGED: " << AddValueTo(min, sec, arguments);
+
+				break;
+			}
+			case 6: {
+				int elementsCount = 0;
+				int elementId = 0;
+
+				cout << "\nElements count: "; cin >> elementsCount;
+				cout << "\nElement id: "; cin >> elementId;
+
+				InsertTimerAfter(elementsCount, elementId, arguments);
+
+				break;
+			}
+			case 7: {
+				for (Timer timer : timers)
+				{
+					cout << timer << endl;
+				}
+				break;
+			}
+			}
+		}
+		catch (runtime_error error)
+		{
+			cout << "Error: " << error.what();
+		}
+
+	}
+}
+
+Timer CreateTimer()
+{
+	int min = 0;
+	int sec = 0;
+	cout << "Min: "; cin >> min;
+	cout << "Sec: "; cin >> sec;
+
+	return Timer(min,sec);
+}
+
+int DeleteEntries(int min, int sec, string fromFile)
+{
+	vector<Timer> readedTimers = FileManager::Read<Timer>(fromFile);
+
+	int deleted = 0;
+	for (int i = 0; i < readedTimers.size(); i++)
+	{
+		Timer timer = readedTimers[i];
+
+		if (timer.GetMin() == min && timer.GetSec() == sec)
+		{
+			readedTimers.erase(readedTimers.begin() + i);
+			deleted++;
+		}
+	}
+
+	FileManager::Save(readedTimers, fromFile);
+
+	return deleted;
+}
+
+int AddValueTo(int min, int sec, string inFile)
+{
+	vector<Timer> readedTimers = FileManager::Read<Timer>(inFile);
+
+	int changed = 0;
+	for (int i = 0; i < readedTimers.size(); i++)
+	{
+		Timer& timer = readedTimers.at(i);
+
+		if (timer.GetMin() == min && timer.GetSec() == sec)
+		{
+			timer + 90;
+			changed++;
+		}
+	}
+
+	FileManager::Save(readedTimers, inFile);
+
+	return changed;
+}
+
+void InsertTimerAfter(int elementsCount, int elementId, string fromFile)
+{
+	vector<Timer> readedTimers = FileManager::Read<Timer>(fromFile);
+	int insertPos = elementId + 1;
+
+	for (int i = 0; i < elementsCount; i++)
+	{
+		readedTimers.insert(readedTimers.begin() + insertPos, CreateTimer());
+		insertPos++;
+	}
+
+	FileManager::Save(readedTimers, fromFile);
+}
+Timer.h
+#pragma once
+
+#include <string>
+
+
+	using namespace std;
+
+	class Timer
+	{
+	private:
+		int min;
+		int sec;
+	public:
+		Timer();
+		Timer(int min, int sec);
+		Timer(const Timer& f);
+		~Timer();
+
+		void setMin(int min);
+		void setSec(int sec);
+
+		int GetMin() {
+			return min;
+		}
+
+		int GetSec() {
+			return sec;
+		}
+
+		void Show();
+
+		Timer operator+(const Timer& other);
+		void operator+(const int seconds);
+		bool operator==(const Timer& other);
+		Timer& operator=(const Timer& other);
+		friend ostream& operator<< (ostream& out, const Timer& timer);
+		friend istream& operator>> (istream& in, Timer& timer);
+	};
+
+Timer.cpp
+#include "Timer.h"
+#include <string>
+#include <iostream>
+
+
+	using namespace std;
+
+	Timer::Timer()
+	{
+		min = 0;
+		sec = 0;
+	}
+	Timer::Timer(int min, int sec)
+	{
+		this->min = min;
+		this->sec = sec;
+	}
+
+	Timer::Timer(const Timer&f)
+	{
+		min = f.min;
+		sec = f.sec;
+	}
+
+	Timer::~Timer()
+	{
+	}
+	void Timer::setMin(int min)
+	{
+		this->min = min;
+	}
+	void Timer::setSec(int sec)
+	{
+		this->sec = sec;
+	}
+	void Timer::Show()
+	{
+		printf("%d:%d\n", min, sec);
+	}
+	Timer Timer::operator+(const Timer &other)
+	{
+		int temp1 = min * 60 + sec;
+		int temp2 = other.min * 60 + other.sec;
+
+		Timer t((temp1 + temp2) / 60, (temp1 + temp2) & 60);
+
+		return t;
+	}
+	void Timer::operator+(const int seconds)
+	{
+		int temp = sec + seconds;
+
+		min = min + (temp / 60);
+		sec = temp & 60;
+	}
+	bool Timer::operator==(const Timer& other)
+	{
+		int temp1 = min * 60 + sec;
+		int temp2 = other.min * 60 + other.sec;
+
+		if (temp1 != temp2)
+			return false;
+
+		return true;
+	}
+	Timer& Timer::operator=(const Timer& other)
+	{
+		min = other.min;
+		sec = other.sec;
+
+		return *this;
+	}
+	ostream& operator<<(ostream& out, const Timer& timer)
+	{
+		out << "Time " << timer.min << ":" << timer.sec;
+
+		return out;
+	}
+	istream& operator>>(istream& in, Timer& timer)
+	{
+		string textFromFile;
+		getline(in, textFromFile);
+		int spacePos = textFromFile.find(' ');
+		int min = 0;
+		int sec = 0;
+		if (spacePos != string::npos)
+		{
+			int delimiter = textFromFile.find(':');
+			if (delimiter != string::npos)
+			{
+				min = stoi(textFromFile.substr(spacePos, delimiter));
+				sec = stoi(textFromFile.substr(delimiter + 1));
+			}
+		}
+
+		timer.min = min;
+		timer.sec = sec;
+
+		return in;
+	}
+
+
+FileManager.cpp
+#pragma once
+
+#include <string>
+#include <iostream>
+#include <vector>
+#include "Timer.h"
+#include <fstream>
+
+using namespace std;
+
+class FileManager
+{
+public:
+	template<class T>
+	static bool Save(vector<T>& vector, string fileName)
+	{
+		if (vector.size() <= 0)
+			return false;
+
+		if (fileName.length() == 0)
+			return false;
+
+		fstream stream(fileName.c_str(), ios::out | ios::trunc);
+		if (!stream)
+			return false;
+
+		for (T obj : vector)
+		{
+			stream << obj << "\n";
+		}
+
+		stream.close();
+
+		return true;
+	}
+
+	template<class T>
+	static vector<T> Read(string filePath)
+	{
+		vector<T> vector;
+		if (filePath.length() == 0)
+			throw runtime_error("filePath length 0");
+
+		fstream stream(filePath.c_str(), ios::in);
+		if (!stream)
+			throw runtime_error("Cannot read " + filePath + " file");
+
+		T object;
+		while (stream >> object)
+		{
+			vector.push_back(object);
+		}
+
+		stream.close();
+
+		return move(vector);
+	}
+};
